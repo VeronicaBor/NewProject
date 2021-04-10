@@ -1,10 +1,54 @@
 #include <SFML/Graphics.hpp>
 #include <time.h>
+#include <vector>
 #include <string>
 #include "View.h"
 #include "map.h"
 
 using namespace sf;
+struct point {
+    float x;
+    float y;
+
+    point(float x1, float y1) {
+        x = x1;
+        y = y1;
+    }
+    friend point operator +(const point& a, const point& b) {
+        point c(a.x + b.x, a.y + b.y);
+        return c;
+    }
+
+    friend point operator -(const point& a, const point& b) {
+        point c(a.x - b.x, a.y - b.y);
+        return c;
+    }
+};
+//функция изменения декортавой системы координат на изометрическую
+point twoDtoIso(const point& twoDpoint) {
+    point isoPoint(0, 0);
+    isoPoint.x = twoDpoint.x - twoDpoint.y;
+    isoPoint.y = (twoDpoint.x + twoDpoint.y) / 2;
+    return isoPoint;
+}
+point twoDtoIso(const float& x, const float& y) {
+    point isoPoint(0, 0);
+    isoPoint.x = x - y;
+    isoPoint.y = (x + y) / 2;
+    return isoPoint;
+}
+point Isoto2D(const point& IsoPoint) {
+    float  x = (2 * IsoPoint.y + IsoPoint.x) / 2;
+    float  y = (2 * IsoPoint.y - IsoPoint.x) / 2;
+    point twoD(x, y);
+    return twoD;
+}
+point Isoto2D(const float& IsoX, const float& IsoY) {
+    float x = (2 * IsoY + IsoX) / 2;
+    float y = (2 * IsoY - IsoX) / 2;
+    point twoD(x, y);
+    return twoD;
+}
 
 class field
 {
@@ -88,48 +132,101 @@ public:
 
         speed = 0;
         sprite.setPosition(x, y);
+        interactionWithMap();//вызываем функцию, отвечающую за взаимодействие с картой
     }
 
-    float getplayercoordinateX() {	//этим методом будем забирать координату Х	
+    
+
+    void interactionWithMap()//ф-ция взаимодействия с картой
+    {
+        point twoD = Isoto2D(x, y);
+        for (int i = twoD.y / 100; i < (twoD.y + h) / 100; i++)
+            for (int j = twoD.x / 100; j < (twoD.x + w) / 100; j++){
+                if (TileMap[i][j] == 'W' || TileMap[i][j] == 'H')
+                {
+                    if (dy > 0)//если мы шли вниз,
+                    {
+                        twoD.y = i * 100 - h;
+                    }
+                    if (dy < 0)
+                    {
+                        twoD.y = i * 100 + 100;
+                    }
+                    if (dx > 0)
+                    {
+                        twoD.x = j * 100 - w;
+                    }
+                    if (dx < 0)
+                    {
+                        twoD.x = j * 100 + 100;
+                    }
+
+                }
+
+                if (TileMap[i][j] == 'f') { 
+
+                    TileMap[i][j] = '.';
+                }
+            }
+        point iso = twoDtoIso(twoD);
+        x = iso.x;
+        y = iso.y;
+    }
+
+    float getplayercoordinateX() {//этим методом будем забирать координату Х	
         return x;
     }
     float getplayercoordinateY() {	//этим методом будем забирать координату Y 	
         return y;
     }
-
+    
 };
 
-struct point {
-    float x;
-    float y;
+class flower {
+public:
+    float x, y;
+    float w, h;
+    String name;
 
-    point(float x1, float y1) {
+    flower(String name1 ,float x1, float y1) {
+        w = 48;
+        h = 45;
         x = x1;
         y = y1;
-    }
-    friend point operator +(const point& a, const point& b) {
-        point c(a.x + b.x, a.y + b.y);
-        return c;
-    }
-
-    friend point operator -(const point& a, const point& b) {
-        point c(a.x - b.x, a.y - b.y);
-        return c;
+        name = name1;
     }
 };
-//функция изменения декортавой системы координат на изометрическую
-point twoDtoIso(const point& twoDpoint) {
-    point isoPoint(0, 0);
-    isoPoint.x = twoDpoint.x - twoDpoint.y;
-    isoPoint.y = (twoDpoint.x + twoDpoint.y) /2;
-    return isoPoint;
-}
-point twoDtoIso(const float& x, const float& y) {
-    point isoPoint(0, 0);
-    isoPoint.x = x - y;
-    isoPoint.y = (x + y) /2;
-    return isoPoint;
-}
+
+class Flowers {
+public:
+    String File;
+
+    Image image;
+    Texture texture;
+    Sprite sprite;
+
+    std::vector<flower> tipes;
+    Flowers(flower a, flower b, flower c, flower d, flower e, flower f) {
+        File = "assets/flowers.png";
+        image.loadFromFile(File);
+        texture.loadFromImage(image);
+        sprite.setTexture(texture);
+
+        tipes.push_back(a);
+        tipes.push_back(b);
+        tipes.push_back(c);
+        tipes.push_back(d);
+        tipes.push_back(e);
+        tipes.push_back(f);
+
+    }
+
+    void GetRect(int i) {
+        sprite.setTextureRect(IntRect(tipes[i].x, tipes[i].y, tipes[i].w, tipes[i].h));
+    }
+};
+
+
 
 //функция движения игрового персонажа
 
@@ -139,9 +236,16 @@ int main()
     RenderWindow window(sf::VideoMode(810, 540), "SFML works!");
 
     Clock clock;
+    point isoMain(405, 270);
 
     Player p("ch.png", 405, 270, 42, 62.5);
 
+    Flowers firts_loc({ "желтый", 81, 240 },
+                      { "красный", 129, 240 },
+                      { "зеленый", 177, 240 },
+                      { "синий", 225, 240 }, 
+                      { "розовый", 273, 240}, 
+                      { "белый", 321, 240 });
 
     field water("water.png");
 
@@ -174,7 +278,6 @@ int main()
             CurrentFrame += 0.005 * time;
             if (CurrentFrame > 3) CurrentFrame -= 3;
             p.sprite.setTextureRect(IntRect(42 * int(CurrentFrame), 62.5, 42, 62.5));
-            getplayercoordinateforview(p.getplayercoordinateX(), p.getplayercoordinateY());//передаем координаты игрока в функцию управления камерой
         }
 
         if (Keyboard::isKeyPressed(Keyboard::Right)) {
@@ -182,7 +285,6 @@ int main()
             CurrentFrame += 0.005 * time;
             if (CurrentFrame > 3) CurrentFrame -= 3;
             p.sprite.setTextureRect(IntRect(42 * int(CurrentFrame), 125, 42, 62.5));
-            getplayercoordinateforview(p.getplayercoordinateX(), p.getplayercoordinateY());//передаем координаты игрока в функцию управления камерой
         }
 
         if (Keyboard::isKeyPressed(Keyboard::Up)) {
@@ -190,7 +292,6 @@ int main()
             CurrentFrame += 0.005 * time;
             if (CurrentFrame > 3) CurrentFrame -= 3;
             p.sprite.setTextureRect(IntRect(42 * int(CurrentFrame), 187.5+3, 42, 62.5));
-            getplayercoordinateforview(p.getplayercoordinateX(), p.getplayercoordinateY());//передаем координаты игрока в функцию управления камерой
 
         }
 
@@ -199,13 +300,14 @@ int main()
             CurrentFrame += 0.005 * time;
             if (CurrentFrame > 3) CurrentFrame -= 3;
             p.sprite.setTextureRect(IntRect(42 * int(CurrentFrame), 2, 42, 62.5));
-            getplayercoordinateforview(p.getplayercoordinateX(), p.getplayercoordinateY());//передаем координаты игрока в функцию управления камерой
 
         }
+        getplayercoordinateforview(p.getplayercoordinateX(), p.getplayercoordinateY());
         p.update(time);
         window.setView(view);//"оживляем" камеру в окне sfml
         window.clear();
         Sprite DrawingPicture;
+        int random = 0;
         for (int i = 0; i < HEIGHT_MAP; i++)
         {
             for (int j = 0; j < WIDTH_MAP; j++)
@@ -227,6 +329,15 @@ int main()
                 if (TileMap[i][j] == 'H') {
                     DrawingPicture = house.print(iso.x, iso.y);
                     window.draw(DrawingPicture);
+                }
+                if (TileMap[i][j] == 'f') {
+                    
+                    firts_loc.GetRect(random);
+                    DrawingPicture = firts_loc.sprite;
+                    DrawingPicture.setPosition(iso.x-36, iso.y- 22.5);
+                    window.draw(DrawingPicture);
+                    random++;
+                    if (random == 6) random = 0;
                 }
             }
         }
