@@ -1,6 +1,7 @@
 #include <SFML/Graphics.hpp>
 #include <time.h>
 #include <vector>
+#include <iostream>
 #include <string>
 #include "View.h"
 #include "map.h"
@@ -140,32 +141,32 @@ public:
     void interactionWithMap()//ф-ция взаимодействия с картой
     {
         point twoD = Isoto2D(x, y);
-        for (int i = twoD.y / 100; i < (twoD.y + h) / 100; i++)
-            for (int j = twoD.x / 100; j < (twoD.x + w) / 100; j++){
-                if (TileMap[i][j] == 'W' || TileMap[i][j] == 'H')
+        for (int i = twoD.y / 50; i < (twoD.y + h) / 50; i++)
+            for (int j = twoD.x / 50; j < (twoD.x + w) / 50; j++){
+                if (TileMap[j][i] == 'W' || TileMap[j][i] == 'H')
                 {
                     if (dy > 0)//если мы шли вниз,
                     {
-                        twoD.y = i * 100 - h;
+                        twoD.y = i * 50 - h;
                     }
                     if (dy < 0)
                     {
-                        twoD.y = i * 100 + 100;
+                        twoD.y = i * 50 + 50;
                     }
                     if (dx > 0)
                     {
-                        twoD.x = j * 100 - w;
+                        twoD.x = j * 50 - w;
                     }
                     if (dx < 0)
                     {
-                        twoD.x = j * 100 + 100;
+                        twoD.x = j * 50 + 50;
                     }
 
                 }
 
-                if (TileMap[i][j] == 'f') { 
+                if (TileMap[j][i] == 'f') { 
 
-                    TileMap[i][j] = '.';
+                    TileMap[j][i] = ' ';
                 }
             }
         point iso = twoDtoIso(twoD);
@@ -189,8 +190,8 @@ public:
     String name;
 
     flower(String name1 ,float x1, float y1) {
-        w = 48;
-        h = 45;
+        w = 51;
+        h = 20;
         x = x1;
         y = y1;
         name = name1;
@@ -240,12 +241,12 @@ int main()
 
     Player p("ch.png", 405, 270, 42, 62.5);
 
-    Flowers firts_loc({ "желтый", 81, 240 },
-                      { "красный", 129, 240 },
-                      { "зеленый", 177, 240 },
-                      { "синий", 225, 240 }, 
-                      { "розовый", 273, 240}, 
-                      { "белый", 321, 240 });
+    Flowers firts_loc({ "желтый", 287, 220 },
+                      { "красный", 287+51, 220 },
+                      { "зеленый", 287 + 51*2, 220 },
+                      { "синий", 287 + 51*3, 220 },
+                      { "розовый", 287 + 51*4, 220},
+                      { "белый", 287 + 51*5, 220 });
 
     field water("water.png");
 
@@ -258,8 +259,11 @@ int main()
     field roadCornerNE("roadCornerNE.png");
 
     Assets house("house.png", 22, 90);
+    
 
     float CurrentFrame = 0;
+
+    char WindowMod = 'G';
     while (window.isOpen())
     {
         float time = clock.getElapsedTime().asMilliseconds();
@@ -272,78 +276,87 @@ int main()
                 window.close();
         }
 
+        if (WindowMod == 'G') {
+            if (Keyboard::isKeyPressed(Keyboard::Left)) {
+                p.dir = 1; p.speed = 0.1;
+                CurrentFrame += 0.005 * time;
+                if (CurrentFrame > 3) CurrentFrame -= 3;
+                p.sprite.setTextureRect(IntRect(42 * int(CurrentFrame), 62.5, 42, 62.5));
+            }
 
-        if (Keyboard::isKeyPressed(Keyboard::Left)) {
-            p.dir = 1; p.speed = 0.1;
-            CurrentFrame += 0.005 * time;
-            if (CurrentFrame > 3) CurrentFrame -= 3;
-            p.sprite.setTextureRect(IntRect(42 * int(CurrentFrame), 62.5, 42, 62.5));
-        }
+            if (Keyboard::isKeyPressed(Keyboard::Right)) {
+                p.dir = 0; p.speed = 0.1;
+                CurrentFrame += 0.005 * time;
+                if (CurrentFrame > 3) CurrentFrame -= 3;
+                p.sprite.setTextureRect(IntRect(42 * int(CurrentFrame), 125, 42, 62.5));
+            }
 
-        if (Keyboard::isKeyPressed(Keyboard::Right)) {
-            p.dir = 0; p.speed = 0.1;
-            CurrentFrame += 0.005 * time;
-            if (CurrentFrame > 3) CurrentFrame -= 3;
-            p.sprite.setTextureRect(IntRect(42 * int(CurrentFrame), 125, 42, 62.5));
-        }
+            if (Keyboard::isKeyPressed(Keyboard::Up)) {
+                p.dir = 3; p.speed = 0.1;
+                CurrentFrame += 0.005 * time;
+                if (CurrentFrame > 3) CurrentFrame -= 3;
+                p.sprite.setTextureRect(IntRect(42 * int(CurrentFrame), 187.5 + 3, 42, 62.5));
 
-        if (Keyboard::isKeyPressed(Keyboard::Up)) {
-            p.dir = 3; p.speed = 0.1;
-            CurrentFrame += 0.005 * time;
-            if (CurrentFrame > 3) CurrentFrame -= 3;
-            p.sprite.setTextureRect(IntRect(42 * int(CurrentFrame), 187.5+3, 42, 62.5));
+            }
 
-        }
+            if (Keyboard::isKeyPressed(Keyboard::Down)) {
+                p.dir = 2; p.speed = 0.1;
+                CurrentFrame += 0.005 * time;
+                if (CurrentFrame > 3) CurrentFrame -= 3;
+                p.sprite.setTextureRect(IntRect(42 * int(CurrentFrame), 2, 42, 62.5));
 
-        if (Keyboard::isKeyPressed(Keyboard::Down)) {
-            p.dir = 2; p.speed = 0.1;
-            CurrentFrame += 0.005 * time;
-            if (CurrentFrame > 3) CurrentFrame -= 3;
-            p.sprite.setTextureRect(IntRect(42 * int(CurrentFrame), 2, 42, 62.5));
-
-        }
-        getplayercoordinateforview(p.getplayercoordinateX(), p.getplayercoordinateY());
-        p.update(time);
-        window.setView(view);//"оживляем" камеру в окне sfml
-        window.clear();
-        Sprite DrawingPicture;
-        int random = 0;
-        for (int i = 0; i < HEIGHT_MAP; i++)
-        {
-            for (int j = 0; j < WIDTH_MAP; j++)
+            }
+            getplayercoordinateforview(p.getplayercoordinateX(), p.getplayercoordinateY());
+            p.update(time);
+            window.setView(view);//"оживляем" камеру в окне sfml
+            window.clear();
+            Sprite DrawingPicture;
+            int random = 0;
+            for (int i = 0; i < HEIGHT_MAP; i++)
             {
-                point iso = twoDtoIso(50 * i, 50 * j);
-                if (TileMap[i][j] == 'W') DrawingPicture = water.print(iso.x, iso.y);
+                for (int j = 0; j < WIDTH_MAP; j++)
+                {
+                    point iso = twoDtoIso(50 * i, 50 * j);
+                    if (TileMap[i][j] == 'W') DrawingPicture = water.print(iso.x, iso.y);
 
-                if (TileMap[i][j] == '.' || TileMap[i][j] == 'f') DrawingPicture = grass.print(iso.x, iso.y);
-                if (TileMap[i][j] == 'H') DrawingPicture = grass.print(iso.x, iso.y);
+                    if (TileMap[i][j] == '.' || TileMap[i][j] == 'f') DrawingPicture = grass.print(iso.x, iso.y);
+                    if (TileMap[i][j] == 'H') DrawingPicture = grass.print(iso.x, iso.y);
 
-                if (TileMap[i][j] == '1') DrawingPicture = roadEast.print(iso.x, iso.y);;
-                if (TileMap[i][j] == '2') DrawingPicture = roadNorth.print(iso.x, iso.y);
-                if (TileMap[i][j] == '3') DrawingPicture = roadCornerWS.print(iso.x, iso.y);
-                if (TileMap[i][j] == '4') DrawingPicture = roadCornerNW.print(iso.x, iso.y);
-                if (TileMap[i][j] == '5') DrawingPicture = roadCornerES.print(iso.x, iso.y);
-                if (TileMap[i][j] == '6') DrawingPicture = roadCornerNE.print(iso.x, iso.y);
+                    if (TileMap[i][j] == '1') DrawingPicture = roadEast.print(iso.x, iso.y);;
+                    if (TileMap[i][j] == '2') DrawingPicture = roadNorth.print(iso.x, iso.y);
+                    if (TileMap[i][j] == '3') DrawingPicture = roadCornerWS.print(iso.x, iso.y);
+                    if (TileMap[i][j] == '4') DrawingPicture = roadCornerNW.print(iso.x, iso.y);
+                    if (TileMap[i][j] == '5') DrawingPicture = roadCornerES.print(iso.x, iso.y);
+                    if (TileMap[i][j] == '6') DrawingPicture = roadCornerNE.print(iso.x, iso.y);
 
-                window.draw(DrawingPicture);
-                if (TileMap[i][j] == 'H') {
-                    DrawingPicture = house.print(iso.x, iso.y);
                     window.draw(DrawingPicture);
+                    if (TileMap[i][j] == 'H') {
+                        DrawingPicture = house.print(iso.x, iso.y);
+                        window.draw(DrawingPicture);
+                    }
+                    if (TileMap[i][j] == 'f') {
+
+                        firts_loc.GetRect(random);
+                        DrawingPicture = firts_loc.sprite;
+                        DrawingPicture.setPosition(iso.x + 25, iso.y + 10);
+                        window.draw(DrawingPicture);
+                        random++;
+                        if (random == 6) random = 0;
+                    }
                 }
-                if (TileMap[i][j] == 'f') {
-                    
-                    firts_loc.GetRect(random);
-                    DrawingPicture = firts_loc.sprite;
-                    DrawingPicture.setPosition(iso.x-36, iso.y- 22.5);
-                    window.draw(DrawingPicture);
-                    random++;
-                    if (random == 6) random = 0;
+                if (Keyboard::isKeyPressed(Keyboard::M)) {
+                    WindowMod = 'C';
                 }
             }
+            window.draw(p.sprite);
         }
+        if (WindowMod == 'C') {
+            window.clear();
+            if (Keyboard::isKeyPressed(Keyboard::Escape) || Keyboard::isKeyPressed(Keyboard::M)) {
+                WindowMod = 'G';
+            }
 
-
-        window.draw(p.sprite);
+        }
         window.display();
     }
 
