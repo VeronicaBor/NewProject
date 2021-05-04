@@ -145,6 +145,7 @@
     <ClCompile Include="main.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="Potions.h" />
     <ClInclude Include="View.h" />
     <ClInclude Include="map.h" />
   </ItemGroup>
