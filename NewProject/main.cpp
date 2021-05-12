@@ -1,8 +1,8 @@
 #include <SFML/Graphics.hpp>
 #include <time.h>
 #include <vector>
-#include <iostream>
 #include <string>
+#include <iostream>
 #include "View.h"
 #include "map.h"
 
@@ -164,19 +164,19 @@ public:
     {
         point twoD = Isoto2D(x, y);
         point twoD_vector = Isoto2D(dx, dy);
-        for (int i = twoD.y / 50; i < (twoD.y + h) / 50; i++)
+        for (int i = twoD.y / 50; i < (twoD.y + w) / 50; i++)
             for (int j = twoD.x / 50; j < (twoD.x + w) / 50; j++){
                 if (TileMap[j][i] == 'W' || TileMap[j][i] == 'H' || TileMap[j][i] == 'B' || TileMap[j][i] == 'b')
                 {
                     if (twoD_vector.y < 0 && twoD_vector.x < 0)//если мы шли вниз,
                     {
                         twoD.x = j * 50 + w;
-                        twoD.y = i * 50 + h;
+                        twoD.y = i * 50 + w;
                     }
                     if (twoD_vector.y < 0 && twoD_vector.x > 0)
                     {
                         twoD.x = j*50 + w;
-                        twoD.y = i * 50 + h;
+                        twoD.y = i * 50 + w;
                     }
                     if (twoD_vector.y > 0 && twoD_vector.x < 0)
                     {
@@ -219,6 +219,8 @@ public:
     void decreaseMaxHP(const int& minus) {
         maxHP -= minus;
     }
+    int getMaxHP() { return maxHP; }
+    int getHP() { return HP; }
 
     void takeDamage(const int& damage) {
         if (HP - damage > 0) HP -= damage;
@@ -287,8 +289,41 @@ public:
 
 class UI {
 public:
+    Image image;
     Texture texture;
     Sprite sprite;
+
+    point Health;
+    point Controler;
+    point potion;
+
+    UI(String Path) {
+        image.loadFromFile(Path);
+        image.createMaskFromColor(Color(198,198,198));
+        texture.loadFromImage(image);
+        sprite.setTexture(texture);
+    }
+
+    void GetCordinate(float x, float y) {
+        Health.x = x + 20, Health.y = 520 + y;
+        Controler.x = x + 580, Controler.y = 310 + y;
+        potion.x = x + 640, potion.y = y + 20;
+    }
+
+    void Get_Texture(const char& key) {
+        if (key == 'C') {
+            sprite.setTextureRect(IntRect(0, 0, 230, 230));
+            sprite.setPosition(Controler.x, Controler.y);
+        }
+        if (key == 'F') sprite.setTextureRect(IntRect(17, 252, 37, 32));
+        if (key == 'H') sprite.setTextureRect(IntRect(17, 289, 37, 32));
+        if (key == 'E') sprite.setTextureRect(IntRect(17, 325, 37, 32));
+
+        if (key == 'P') {
+            sprite.setTextureRect(IntRect(0, 370, 172, 45));
+            sprite.setPosition(potion.x, potion.y);
+        }
+    }
 };
 
 class Inventary {
@@ -349,6 +384,29 @@ public:
         AfterCraftPotions.x = 137, AfterCraftPotions.y = 197;
     }
 
+    void CorrectInventary(const float& dx,const float& dy) {
+        x = 229 + dx; y = 69.5 + dy;
+        sprite.setPosition(x, y);
+
+        FlowerInventary.x = 14 + dx, FlowerInventary.y = 277 + dy;
+        PotionInventary.x = 237 + dx, PotionInventary.y = 277 + dy;
+
+        Healmet.x = 14 + dx, Healmet.y = 13 + dy;
+        Armor.x = 14 + dx, Armor.y = 49 + dy;
+        Pants.x = 14 + dx, Pants.y = 85 + dy;
+        Socks.x = 14 + dx; Socks.y = 121 + dy;
+
+        Sword.x = 73 + dx, Sword.y = 13 + dy;
+        rings.x = 73 + dx, rings.y = 49 + dy;
+        NumOfRings = 3;
+
+        ActivePotion[0].x = 194 + dx, ActivePotion[0].y = 41 + dy;
+        ActivePotion[1].x = 194 + dx, ActivePotion[1].y = 89 + dy;
+        ActivePotion[2].x = 194 + dx, ActivePotion[2].y = 138 + dy;
+
+        Crafting.x = 25 + dx, Crafting.y = 182 + dy;
+        AfterCraftPotions.x = 137 + dx, AfterCraftPotions.y = 197 + dy;
+    }
 
 };
 
@@ -389,17 +447,19 @@ int main()
     Assets watchtower("watchtower.png", 14, 129);
 
     Inventary inventary_menu("assets/Inventory.png");
+    UI ui("assets/UI.png");
 
     float flower_growing_timer = 0;
     float CurrentFrame = 0;
 
-    char WindowMod = 'G';
+    bool OpenInventary = true;
     while (window.isOpen())
     {
         float time = clock.getElapsedTime().asMilliseconds();
         clock.restart();
 
         flower_growing_timer += 0.0005 * time;
+        ui.GetCordinate(p.getplayercoordinateX(), p.getplayercoordinateY());
 
         sf::Event event;
         while (window.pollEvent(event))
@@ -408,63 +468,98 @@ int main()
                 window.close();
         }
 
-        if (WindowMod == 'G') {
-            if (Keyboard::isKeyPressed(Keyboard::Left)) {
-                p.dir = 1; p.speed = speed;
-                CurrentFrame += 0.005 * time;
-                if (CurrentFrame > 3) CurrentFrame -= 3;
-                p.sprite.setTextureRect(IntRect(42 * int(CurrentFrame), 62.5, 42, 62.5));
+        if (event.type == Event::KeyPressed)//событие нажатия клавиши
+            if ((event.key.code == Keyboard::Tab)) {//если клавиша ТАБ
+
+
+                switch (OpenInventary) {//переключатель, реагирующий на логическую переменную showMissionText
+
+                case true: {
+                    window.clear();
+                    inventary_menu.CorrectInventary(p.getplayercoordinateX(), p.getplayercoordinateY());
+                    window.draw(inventary_menu.sprite);
+                    OpenInventary = false;
+                    time = 0;
+                    break;//выходим , чтобы не выполнить условие "false" (которое ниже)
+                }
+                case false: {
+                    OpenInventary = true;// а эта строка позволяет снова нажать клавишу таб и получить вывод на экран
+                    break;
+                }
+                }
             }
 
-            if (Keyboard::isKeyPressed(Keyboard::Right)) {
-                p.dir = 0; p.speed = speed;
-                CurrentFrame += 0.005 * time;
-                if (CurrentFrame > 3) CurrentFrame -= 3;
-                p.sprite.setTextureRect(IntRect(42 * int(CurrentFrame), 125, 42, 62.5));
+        String ForDrawUI = "CP";
+        int HP = p.getHP();
+        for (int i = 0; i < p.getMaxHP() / 2; i++) {
+            if (HP > 0) {
+                HP -= 2;
+                ForDrawUI += 'F';
             }
-
-            if (Keyboard::isKeyPressed(Keyboard::Up)) {
-                p.dir = 3; p.speed = speed;
-                CurrentFrame += 0.005 * time;
-                if (CurrentFrame > 3) CurrentFrame -= 3;
-                p.sprite.setTextureRect(IntRect(42 * int(CurrentFrame), 187.5 + 3, 42, 62.5));
-
+            else if (HP == -1) {
+                HP -= 10;
+                ForDrawUI += 'H';
             }
+            else ForDrawUI += 'E';
+        }
 
-            if (Keyboard::isKeyPressed(Keyboard::Down)) {
-                p.dir = 2; p.speed = speed;
-                CurrentFrame += 0.005 * time;
-                if (CurrentFrame > 3) CurrentFrame -= 3;
-                p.sprite.setTextureRect(IntRect(42 * int(CurrentFrame), 2, 42, 62.5));
+        
+        if (Keyboard::isKeyPressed(Keyboard::Left)) {
+            p.dir = 1; p.speed = speed;
+            CurrentFrame += 0.005 * time;
+            if (CurrentFrame > 3) CurrentFrame -= 3;
+            p.sprite.setTextureRect(IntRect(42 * int(CurrentFrame), 62.5, 42, 62.5));
+        }
 
-            }
-            getplayercoordinateforview(p.getplayercoordinateX(), p.getplayercoordinateY());
-            p.update(time);
-            window.setView(view);//"оживляем" камеру в окне sfml
-            window.clear();
-            Sprite DrawingPicture;
-            int random = 0;
+        if (Keyboard::isKeyPressed(Keyboard::Right)) {
+            p.dir = 0; p.speed = speed;
+            CurrentFrame += 0.005 * time;
+            if (CurrentFrame > 3) CurrentFrame -= 3;
+            p.sprite.setTextureRect(IntRect(42 * int(CurrentFrame), 125, 42, 62.5));
+        }
 
+        if (Keyboard::isKeyPressed(Keyboard::Up)) {
+            p.dir = 3; p.speed = speed;
+            CurrentFrame += 0.005 * time;
+            if (CurrentFrame > 3) CurrentFrame -= 3;
+            p.sprite.setTextureRect(IntRect(42 * int(CurrentFrame), 187.5 + 3, 42, 62.5));
 
-            for (int i = 0; i < HEIGHT_MAP; i++)
+        }
+
+        if (Keyboard::isKeyPressed(Keyboard::Down)) {
+            p.dir = 2; p.speed = speed;
+            CurrentFrame += 0.005 * time;
+            if (CurrentFrame > 3) CurrentFrame -= 3;
+            p.sprite.setTextureRect(IntRect(42 * int(CurrentFrame), 2, 42, 62.5));
+
+        }
+         getplayercoordinateforview(p.getplayercoordinateX(), p.getplayercoordinateY());
+         p.update(time);
+         window.setView(view);//"оживляем" камеру в окне sfml
+         window.clear();
+         Sprite DrawingPicture;
+         int random = 0;
+
+            //Рисуем Карту
+         for (int i = 0; i < HEIGHT_MAP; i++)
             {
                 for (int j = 0; j < WIDTH_MAP; j++)
                 {
                     point iso = twoDtoIso(50 * i, 50 * j);
                     if (TileMap[i][j] == 'W') DrawingPicture = water.print(iso.x, iso.y);
 
-                    if (TileMap[i][j] == '.' || TileMap[i][j] == 'f') DrawingPicture = grass.print(iso.x, iso.y);
-                    if (TileMap[i][j] == 'H') DrawingPicture = grass.print(iso.x, iso.y);
+                    else if (TileMap[i][j] == '.' || TileMap[i][j] == 'f') DrawingPicture = grass.print(iso.x, iso.y);
+                    else if (TileMap[i][j] == 'H') DrawingPicture = grass.print(iso.x, iso.y);
 
-                    if (TileMap[i][j] == '1') DrawingPicture = roadEast.print(iso.x, iso.y);;
+                    else if (TileMap[i][j] == '1') DrawingPicture = roadEast.print(iso.x, iso.y);;
                     if (TileMap[i][j] == '2') DrawingPicture = roadNorth.print(iso.x, iso.y);
-                    if (TileMap[i][j] == '3') DrawingPicture = roadCornerWS.print(iso.x, iso.y);
-                    if (TileMap[i][j] == '4') DrawingPicture = roadCornerNW.print(iso.x, iso.y);
+                    else if (TileMap[i][j] == '3') DrawingPicture = roadCornerWS.print(iso.x, iso.y);
+                    else if (TileMap[i][j] == '4') DrawingPicture = roadCornerNW.print(iso.x, iso.y);
                     if (TileMap[i][j] == '5') DrawingPicture = roadCornerES.print(iso.x, iso.y);
-                    if (TileMap[i][j] == '6') DrawingPicture = roadCornerNE.print(iso.x, iso.y);
-                    if (TileMap[i][j] == 'B') DrawingPicture = wal0001.print(iso.x, iso.y);
+                    else if (TileMap[i][j] == '6') DrawingPicture = roadCornerNE.print(iso.x, iso.y);
+                    else if (TileMap[i][j] == 'B') DrawingPicture = wal0001.print(iso.x, iso.y);
                     if (TileMap[i][j] == 'b') DrawingPicture = watchtower.print(iso.x, iso.y);
-                    if (TileMap[i][j] == 'R') DrawingPicture = lot.print(iso.x, iso.y);
+                    else if (TileMap[i][j] == 'R') DrawingPicture = lot.print(iso.x, iso.y);
 
 
                     window.draw(DrawingPicture);
@@ -472,7 +567,7 @@ int main()
                         DrawingPicture = house.print(iso.x, iso.y);
                         window.draw(DrawingPicture);
                     }
-                    if (TileMap[i][j] == 'f') {
+                    else if (TileMap[i][j] == 'f') {
 
                         firts_loc.GetRect(random);
                         DrawingPicture = firts_loc.sprite;
@@ -482,27 +577,32 @@ int main()
                         if (random == 6) random = 0;
                     }
                 }
-            }
-            if (Keyboard::isKeyPressed(Keyboard::M)) {
-                WindowMod = 'C';
-            }
-            if (flower_growing_timer == 30) {
-                TileMap[rand() % 26 + 12][rand() % 38 + 1] = 'f';
-                flower_growing_timer = 0;
-            }
-            window.draw(p.sprite);
-        }
-        if (WindowMod == 'C') {
-            window.clear();
+               
 
-            window.draw(inventary_menu.sprite);
-            if (Keyboard::isKeyPressed(Keyboard::Escape) || Keyboard::isKeyPressed(Keyboard::M)) {
-                WindowMod = 'G';
             }
 
-        }
+         //Рисуем UI
+         for (int i = 0; i < ForDrawUI.getSize(); i++) {
+                ui.Get_Texture(ForDrawUI[i]);
+                if (ForDrawUI[i] == 'F' || ForDrawUI[i] == 'H' || ForDrawUI[i] == 'E') {
+                    ui.sprite.setPosition(ui.Health.x, ui.Health.y + 37 * (i - 2) + 10);
+                }
+                window.draw(ui.sprite);
+            }
+
+            
+         
+         if (flower_growing_timer == 30) {
+             TileMap[rand() % 26 + 12][rand() % 38 + 1] = 'f';
+             flower_growing_timer = 0;
+         }
+         window.draw(p.sprite);
+        
+        
+
+        
         window.display();
-    }
+        }
 
     return 0;
 }
